@@ -9,14 +9,16 @@ function setup() {
     // console.log(json);
 
     var max_point = json[min_and_max['max'].toString()][0];
-    // console.log(max_point);
-    // fill(255, 0, 0, 100);
-    // ellipse(max_point[0] * 1000, max_point[1] * 1000, 10, 10);
+    console.log(max_point);
+    fill(255, 0, 0, 100);
+    ellipse(max_point[0] * 1000, max_point[1] * 1000, 10, 10);
     //
     var min_point = json[min_and_max['min'].toString()][0];
-    // console.log(min_point);
-    // fill(0, 255, 0, 100);
-    // ellipse(min_point[0] * 1000, min_point[1] * 1000, 10, 10);
+    console.log(min_point);
+    fill(0, 255, 0, 100);
+    ellipse(min_point[0] * 1000, min_point[1] * 1000, 10, 10);
+    fill(0, 150, 0, 100);
+    stroke(255, 255, 255);
 
     for (var key in json) {
         // console.log("key = ",key);
@@ -28,10 +30,8 @@ function setup() {
             // console.log("key1 = ",json[key1]);
             var point1 = json[key][0];
             // console.log("point = ", point1[0]);
-            fill(255, 155, 64, 100);
-            stroke(0, 150, 0);
 
-            ellipse(point1[0] * 1000, point1[1] * 1000, 4, 4);
+            ellipse(point1[0] * 1000, point1[1] * 1000, 1, 1);
             if((point1[0] == max_point[0]) || (point1[0] == min_point[0])){
                 continue;
             }
