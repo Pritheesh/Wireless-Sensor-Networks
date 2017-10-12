@@ -9,8 +9,8 @@ import numpy as np
 import timeit
 import math
 
-N = 2000
-degree = 32
+N = 32000
+degree = 64
 R = math.sqrt(degree / (N * math.pi))
 blocks = math.ceil(1 / R)
 blocks_square = blocks ** 2
