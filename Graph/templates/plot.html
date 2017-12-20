@@ -3,21 +3,184 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>hello</title>
+    <meta name="viewport" content="width = device-width, initial-scale = 1">
+    <title>Random Geometric Graph</title>
     <script>
-
- var global = {
-     global1: '{{ min_max | safe }}',
-     global2: '{{ adj_dict | safe }}'
- }
-</script>
+        var global = {
+            global1: '{{ min_max | safe }}',
+            global2: '{{ points | safe }}',
+            global4: '{{ adj_list | safe }}',
+            global3: '{{ color | safe }}',
+            edges1: '{{ backbone1 | safe }}',
+            edges2: '{{ backbone2 | safe }}'
+        }
+    </script>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
 </head>
-<body>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.14/p5.js"></script>
+<body style="overflow-x: hidden">
 
-{#<input type="hidden" id="myVar" name="variable" value="{{ adj_dict }}">#}
-<script src="{% static "sketch.js" %}"></script>
+<div class="container-fluid col-md-4" style="float: left; position: relative">
+    <div class="container-fluid">
+        <form class="form-horizontal" method="post">
+            {% csrf_token %}
+            <legend>Graph Input</legend>
+            <div class="form-group">
+                <label for="id_nodes" class="col-md-4 control-label">Nodes</label>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="id_nodes" name="nodes"
+                           value="{% if form.nodes.value %}{{ form.nodes.value }}{% endif %}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="id_degree" class="col-md-4 control-label">Degree</label>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="id_degree" name="degree"
+                           value="{% if form.degree.value %}{{ form.degree.value }}{% endif %}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="id_topology" class="col-md-4 control-label">Topology</label>
+                <div class="col-md-6">
+                    <select class="form-control" name="topology" id="id_topology" required>
+                        <option {% ifequal form.topology.value "1" %}selected{% endifequal %} value="1">Square</option>
+                        <option {% ifequal form.topology.value "2" %}selected{% endifequal %} value="2">Circle</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <input type="submit" class="btn btn-primary" value="Submit"/><br>
+            </div>
+        </form>
+    </div><br>
+    {% if for_max %}
+        <div class="container-fluid">
+            <div class="col-md-5">
+                <form class="form-horizontal" name="my-form">
+                    <div class="form-group">
+                        <label for="edges" class="col-md-7">Edges</label>
+                        <input type="checkbox" name="edges" value="edges" id="edges" onclick="onClickEdges()">
+                    </div>
+                    <div class="form-group">
+                        <label for="min-max" class="col-md-7">Min and Max</label>
+                        <input type="checkbox" name="min-max" value="min-max" id="min-max" onclick="onClickMinMax()">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastOrder" class="col-md-7">Smallest last order</label>
+                        <input type="checkbox" name="lastOrder" value="lastOrder" id="lastOrder" onclick="onClickSmallestLast()">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="radio" id="backbone1" name="backbone" value="1" checked>Backbone1</label>
+                        <label><input type="radio" id="backbone2" name="backbone" value="2">Backbone</label>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-7">
+                <div style="font-weight: bolder">Graph Output</div>
+                <ul class="list-group">
+                    <li class="list-group-item">Nodes: {{ form.nodes.value }}</li>
+                    <li class="list-group-item">Degree: {{ form.degree.value }}</li>
+                    <li class="list-group-item">Topology:
+                        {% if form.topology.value == '1' %}
+                                Square
+                        {% elif form.topology.value == '2' %}
+                                Circle
+                        {% endif %}</li>
+                    <li class="list-group-item">Edges: {{ edges }}</li>
+                    <li class="list-group-item">Min deg: {{ for_min }}</li>
+                    <li class="list-group-item">Max deg: {{ for_max }}</li>
+                    <li class="list-group-item">Avg deg: {{ avg }}</li>
+                    <li class="list-group-item">Radius: {{ radius }}</li>
+                    <li class="list-group-item">Colors: {{ num_colors }}</li>
+                    <li class="list-group-item">Backbone1 edges: {{ backbone1_edges }}</li>
+                    <li class="list-group-item">Backbone2 edges: {{ backbone2_edges }}</li>
+                    <li class="list-group-item">Backbone1 vertices: {{ backbone1_vertices }}</li>
+                    <li class="list-group-item">Backbone2 vertices: {{ backbone2_vertices }}</li>
+                    <li class="list-group-item">Domination 1: {{ domination1 }}</li>
+                    <li class="list-group-item">Domination 2: {{ domination2 }}</li>
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{#<div style="float:right; position: relative;">#}
+{#    <div class="container-fluid" style="position: absolute; display: none" id="my-canvas-edges"></div>#}
+{#    <div class="container-fluid" style="position: absolute; display: none" id="my-canvas-minmax"></div>#}
+<div class="container" style="float: right; position: absolute; margin-left: 600px;">
+    <div class="container-fluid" style="position: absolute" id="my-canvas-nodes"></div>
+    <div class="container-fluid" style="position: absolute; visibility: hidden" id="my-canvas-edges"></div>
+    <div class="container-fluid" style="position: absolute; visibility: hidden" id="my-canvas-minmax"></div>
+    <div class="container-fluid" style="position: absolute; visibility: hidden" id="my-canvas-smallest"></div>
+    <div class="container-fluid" style="position: absolute; visibility: hidden" id="my-canvas-backbone1"></div>
+    <div class="container-fluid" style="position: absolute; visibility: hidden" id="my-canvas-backbone2"></div>
+</div>
+
+
+<script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+<script>
+
+    $(document).ready(function(){
+
+            $('input[type=radio][name=backbone]').change(function() {
+                if (this.value == 1) {
+                    $("#my-canvas-backbone1").css("visibility", "visible");
+                    $("#my-canvas-backbone2").css("visibility", "hidden");
+                }
+                else if (this.value == 2) {
+                    $("#my-canvas-backbone1").css("visibility", "hidden");
+                    $("#my-canvas-backbone2").css("visibility", "visible");
+                }
+            });
+        });
+
+    function onClickSmallestLast() {
+        var last = document.getElementById("lastOrder");
+        if(last.checked){
+            $("#my-canvas-smallest").css("visibility", "visible");
+{#            $("#my-canvas-nodes").css("visibility", "hidden");#}
+{#            $("#my-canvas-edges").css("visibility", "hidden");#}
+        }
+        else {
+            $("#my-canvas-smallest").css("visibility", "hidden");
+        }
+
+    }
+
+    function onClickEdges() {
+        var edges = document.getElementById("edges");
+        if(edges.checked){
+            $("#my-canvas-edges").css("visibility", "visible");
+{#            $("#my-canvas-nodes").css("visibility", "hidden");#}
+{#            $("#my-canvas-minmax").css("visibility", "hidden");#}
+{#            $("#min-max").prop("checked",false);#}
+        }
+        else{
+            $("#my-canvas-edges").css("visibility", "hidden");
+{#            $("#my-canvas-nodes").css("visibility", "visible");#}
+{#            $("#my-canvas-minmax").css("visibility", "hidden");#}
+        }
+    }
+    function onClickMinMax() {
+        var minmax = document.getElementById("min-max");
+        if(minmax.checked){
+{#            $("#my-canvas-edges").css("visibility", "hidden");#}
+{#            $("#my-canvas-nodes").css("visibility", "hidden");#}
+            $("#my-canvas-minmax").css("visibility", "visible");
+{#            $("#edges").prop("checked",false);#}
+        }
+        else{
+{#            $("#my-canvas-edges").css("visibility", "hidden");#}
+{#            $("#my-canvas-nodes").css("visibility", "visible");#}
+            $("#my-canvas-minmax").css("visibility", "hidden");
+        }
+    }
+</script>
+
+
+<script src="{% static 'js/p5.min.js' %}"></script>
+<script src="{% static "js/sketch.js" %}"></script>
 
 </body>
 </html>
